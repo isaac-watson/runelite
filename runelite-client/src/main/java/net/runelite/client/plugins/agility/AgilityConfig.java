@@ -82,13 +82,13 @@ public interface AgilityConfig extends Config
 
 	@ConfigItem(
 		keyName = "markHighlight",
-		name = "Mark highlight Color",
+		name = "Mark Highlight Color",
 		description = "Color of highlighted Marks of Grace",
 		position = 5
 	)
 	default Color getMarkColor()
 	{
-		return Color.ORANGE;
+		return Color.RED;
 	}
 
 	@ConfigItem(
@@ -98,6 +98,50 @@ public interface AgilityConfig extends Config
 		position = 6
 	)
 	default boolean highlightShortcuts()
+	{
+		return true;
+	}
+
+	@ConfigItem(
+		keyName = "trapOverlay",
+		name = "Show Trap Overlay",
+		description = "Enable/disable the highlighting of traps on Agility courses",
+		position = 7
+	)
+	default boolean showTrapOverlay()
+	{
+		return true;
+	}
+
+	@ConfigItem(
+		keyName = "trapHighlight",
+		name = "Trap Overlay Color",
+		description = "Color of Agility trap overlay",
+		position = 8
+	)
+	default Color getTrapColor()
+	{
+		return Color.RED;
+	}
+
+	@ConfigItem(
+		keyName = "agilityArenaNotifier",
+		name = "Agility Arena notifier",
+		description = "Notify on ticket location change in Agility Arena",
+		position = 9
+	)
+	default boolean notifyAgilityArena()
+	{
+		return true;
+	}
+
+	@ConfigItem(
+		keyName = "agilityArenaTimer",
+		name = "Agility Arena timer",
+		description = "Configures whether Agility Arena timer is displayed",
+		position = 10
+	)
+	default boolean showAgilityArenaTimer()
 	{
 		return true;
 	}

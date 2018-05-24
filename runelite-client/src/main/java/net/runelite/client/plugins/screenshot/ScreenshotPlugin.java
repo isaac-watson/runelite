@@ -30,6 +30,7 @@ import com.google.common.eventbus.Subscribe;
 import com.google.inject.Provides;
 import java.awt.Desktop;
 import java.awt.Graphics;
+import java.awt.Image;
 import java.awt.Toolkit;
 import java.awt.TrayIcon;
 import java.awt.datatransfer.Clipboard;
@@ -43,7 +44,6 @@ import java.text.DateFormat;
 import java.text.SimpleDateFormat;
 import java.time.LocalDate;
 import java.util.Date;
-import java.util.Locale;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.function.Consumer;
 import java.util.regex.Matcher;
@@ -70,7 +70,6 @@ import net.runelite.api.widgets.WidgetInfo;
 import static net.runelite.api.widgets.WidgetInfo.TO_GROUP;
 import net.runelite.client.Notifier;
 import static net.runelite.client.RuneLite.SCREENSHOT_DIR;
-import net.runelite.client.ui.DrawManager;
 import net.runelite.client.config.ConfigManager;
 import net.runelite.client.input.KeyManager;
 import net.runelite.client.plugins.Plugin;
@@ -78,6 +77,7 @@ import net.runelite.client.plugins.PluginDescriptor;
 import net.runelite.client.plugins.screenshot.imgur.ImageUploadRequest;
 import net.runelite.client.plugins.screenshot.imgur.ImageUploadResponse;
 import net.runelite.client.ui.ClientUI;
+import net.runelite.client.ui.DrawManager;
 import net.runelite.client.ui.NavigationButton;
 import net.runelite.client.ui.TitleToolbar;
 import net.runelite.client.ui.overlay.Overlay;
@@ -101,7 +101,7 @@ public class ScreenshotPlugin extends Plugin
 	private static final HttpUrl IMGUR_IMAGE_UPLOAD_URL = HttpUrl.parse("https://api.imgur.com/3/image");
 	private static final MediaType JSON = MediaType.parse("application/json");
 
-	static final DateFormat TIME_FORMAT = new SimpleDateFormat("yyyy-MM-dd_HH-mm-ss", Locale.US);
+	static final DateFormat TIME_FORMAT = new SimpleDateFormat("yyyy-MM-dd_HH-mm-ss");
 
 	private static final Pattern NUMBER_PATTERN = Pattern.compile("([0-9]+)");
 	private static final Pattern LEVEL_UP_PATTERN = Pattern.compile("Your ([a-zA-Z]+) (?:level is|are)? now (\\d+)\\.");
@@ -410,11 +410,11 @@ public class ScreenshotPlugin extends Plugin
 			return;
 		}
 
-		Consumer<BufferedImage> screenshotConsumer = image ->
+		Consumer<Image> screenshotConsumer = image ->
 		{
 			BufferedImage screenshot = config.includeFrame()
 				? new BufferedImage(clientUi.getWidth(), clientUi.getHeight(), BufferedImage.TYPE_INT_ARGB)
-				: new BufferedImage(image.getWidth(), image.getHeight(), BufferedImage.TYPE_INT_ARGB);
+				: new BufferedImage(image.getWidth(null), image.getHeight(null), BufferedImage.TYPE_INT_ARGB);
 
 			Graphics graphics = screenshot.getGraphics();
 

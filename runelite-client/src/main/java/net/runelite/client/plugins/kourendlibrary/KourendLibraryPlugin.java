@@ -93,7 +93,8 @@ public class KourendLibraryPlugin extends Plugin
 		}
 
 		navButton = NavigationButton.builder()
-			.name("Kourend Library")
+			.tooltip("Kourend Library")
+			.priority(6)
 			.icon(icon)
 			.panel(panel)
 			.build();
@@ -118,7 +119,7 @@ public class KourendLibraryPlugin extends Plugin
 	{
 		if (MenuAction.GAME_OBJECT_FIRST_OPTION == menuOpt.getMenuAction() && menuOpt.getMenuTarget().contains("Bookshelf"))
 		{
-			lastBookcaseClick = WorldPoint.fromRegion(client, menuOpt.getId() & 127, menuOpt.getId() >> 7 & 127, client.getPlane());
+			lastBookcaseClick = WorldPoint.fromRegion(client, menuOpt.getActionParam(), menuOpt.getWidgetId(), client.getPlane());
 		}
 	}
 

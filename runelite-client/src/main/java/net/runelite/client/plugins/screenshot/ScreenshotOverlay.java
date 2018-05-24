@@ -29,12 +29,12 @@ import java.awt.Color;
 import java.awt.Dimension;
 import java.awt.FontMetrics;
 import java.awt.Graphics2D;
+import java.awt.Image;
 import java.awt.image.BufferedImage;
 import java.io.IOException;
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
 import java.util.Date;
-import java.util.Locale;
 import java.util.Queue;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.function.Consumer;
@@ -53,7 +53,7 @@ import net.runelite.client.ui.overlay.OverlayPriority;
 @Slf4j
 public class ScreenshotOverlay extends Overlay
 {
-	private static final DateFormat DATE_FORMAT = new SimpleDateFormat("MMM. dd, yyyy", Locale.US);
+	private static final DateFormat DATE_FORMAT = new SimpleDateFormat("MMM. dd, yyyy");
 	private static final int REPORT_BUTTON_X_OFFSET = 404;
 	private static BufferedImage REPORT_BUTTON;
 
@@ -75,7 +75,7 @@ public class ScreenshotOverlay extends Overlay
 	private final Client client;
 	private final DrawManager drawManager;
 
-	private final Queue<Consumer<BufferedImage>> consumers = new ConcurrentLinkedQueue<>();
+	private final Queue<Consumer<Image>> consumers = new ConcurrentLinkedQueue<>();
 
 	@Inject
 	public ScreenshotOverlay(Client client, DrawManager drawManager)
@@ -119,7 +119,7 @@ public class ScreenshotOverlay extends Overlay
 
 		// Request the queued screenshots to be taken,
 		// now that the timestamp is visible.
-		Consumer<BufferedImage> consumer;
+		Consumer<Image> consumer;
 		while ((consumer = consumers.poll()) != null)
 		{
 			drawManager.requestNextFrameListener(consumer);
@@ -128,7 +128,7 @@ public class ScreenshotOverlay extends Overlay
 		return null;
 	}
 
-	public void queueForTimestamp(Consumer<BufferedImage> screenshotConsumer)
+	public void queueForTimestamp(Consumer<Image> screenshotConsumer)
 	{
 		if (REPORT_BUTTON == null)
 		{

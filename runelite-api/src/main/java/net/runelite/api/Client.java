@@ -26,6 +26,7 @@ package net.runelite.api;
 
 import java.awt.Canvas;
 import java.awt.Dimension;
+import java.util.EnumSet;
 import java.util.List;
 import java.util.Map;
 import javax.annotation.Nullable;
@@ -108,6 +109,10 @@ public interface Client extends GameEngine
 
 	SpritePixels createItemSprite(int itemId, int quantity, int border, int shadowColor, int stackable, boolean noted, int scale);
 
+	SpritePixels getSprite(IndexDataBase source, int archiveId, int fileId);
+
+	IndexDataBase getIndexSprites();
+
 	int getBaseX();
 
 	int getBaseY();
@@ -168,7 +173,14 @@ public interface Client extends GameEngine
 
 	int[][] getXteaKeys();
 
+	@VisibleForDevtools
 	int[] getVarps();
+
+	@VisibleForDevtools
+	int[] getIntVarcs();
+
+	@VisibleForDevtools
+	String[] getStrVarcs();
 
 	int getVar(VarPlayer varPlayer);
 
@@ -182,10 +194,10 @@ public interface Client extends GameEngine
 	void setSetting(Varbits varbit, int value);
 
 	@VisibleForDevtools
-	int getVarbitValue(int varbit);
+	int getVarbitValue(int[] varps, int varbitId);
 
 	@VisibleForDevtools
-	void setVarbitValue(int varbit, int value);
+	void setVarbitValue(int[] varps, int varbit, int value);
 
 	HashTable getWidgetFlags();
 
@@ -258,51 +270,6 @@ public interface Client extends GameEngine
 	 */
 	void playSoundEffect(int id, int x, int y, int range);
 
-	boolean getDrawBoundingBoxes2D();
-
-	/**
-	 * When {@code shouldDraw} is true, a 2D bounding box will be drawn for
-	 * all on-screen objects
-	 *
-	 * @param shouldDraw whether or not to draw 2D bounding boxes
-	 */
-	void setDrawBoundingBoxes2D(boolean shouldDraw);
-
-	boolean getDrawBoundingBoxes3D();
-
-	/**
-	 * When {@code shouldDraw} is true, 3D bounding boxes will be drawn
-	 * either for the object under the cursor, or every object on screen
-	 * according to
-	 * {@link #setBoundingBoxAlwaysOnMode(boolean) BoundingBoxAlwaysOnMode}
-	 *
-	 * @param shouldDraw whether or not to draw 3D bounding boxes
-	 */
-	void setDrawBoundingBoxes3D(boolean shouldDraw);
-
-	boolean getdrawObjectGeometry2D();
-
-	/**
-	 * When {@code shouldDraw} is true, the clickbox geometry for the object
-	 * under the cursor will be displayed
-	 *
-	 * @param shouldDraw whether or not to draw the clickbox geometry
-	 */
-	void setdrawObjectGeometry2D(boolean shouldDraw);
-
-	boolean getBoundingBoxAlwaysOnMode();
-
-	/**
-	 * Changes how {@link #getDrawBoundingBoxes3D()} behaves when active.
-	 * When {@code alwaysDrawBoxes} is true, 3D bounding boxes will be
-	 * drawn. When false, a 3D bounding box will only be drawn for the
-	 * object under the cursor
-	 *
-	 * @param alwaysDrawBoxes whether or not to draw every 3D bounding box,
-	 * when 3D bounding boxes are enabled
-	 */
-	void setBoundingBoxAlwaysOnMode(boolean alwaysDrawBoxes);
-
 	BufferProvider getBufferProvider();
 
 	int getMouseIdleTicks();
@@ -344,6 +311,8 @@ public interface Client extends GameEngine
 
 	ClanMember[] getClanMembers();
 
+	Friend[] getFriends();
+
 	boolean isClanMember(String name);
 
 	Preferences getPreferences();
@@ -384,6 +353,8 @@ public interface Client extends GameEngine
 
 	boolean hasHintArrow();
 
+	HintArrowType getHintArrowType();
+
 	void clearHintArrow();
 
 	void setHintArrow(WorldPoint point);
@@ -391,6 +362,12 @@ public interface Client extends GameEngine
 	void setHintArrow(Player player);
 
 	void setHintArrow(NPC npc);
+
+	WorldPoint getHintArrowPoint();
+
+	Player getHintArrowPlayer();
+
+	NPC getHintArrowNpc();
 
 	boolean isInterpolatePlayerAnimations();
 
@@ -448,7 +425,17 @@ public interface Client extends GameEngine
 	@VisibleForDevtools
 	void setChangedSkillsCount(int i);
 
+	void setSpriteOverrides(Map<Integer, SpritePixels> overrides);
+
+	void setWidgetSpriteOverrides(Map<Integer, SpritePixels> overrides);
+
+	void setCompass(SpritePixels spritePixels);
+
 	int getTickCount();
 
 	void setTickCount(int tickCount);
+
+	void setInventoryDragDelay(int delay);
+
+	EnumSet<WorldType> getWorldType();
 }

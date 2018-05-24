@@ -25,10 +25,12 @@
 package net.runelite.mixins;
 
 import java.util.ArrayList;
+import java.util.EnumSet;
 import java.util.List;
 import javax.annotation.Nullable;
 import net.runelite.api.ChatMessageType;
 import net.runelite.api.ClanMember;
+import net.runelite.api.Friend;
 import net.runelite.api.GameState;
 import net.runelite.api.GrandExchangeOffer;
 import net.runelite.api.GraphicsObject;
@@ -58,6 +60,7 @@ import net.runelite.api.Tile;
 import net.runelite.api.VarPlayer;
 import net.runelite.api.Varbits;
 import net.runelite.api.WidgetNode;
+import net.runelite.api.WorldType;
 import net.runelite.api.coords.LocalPoint;
 import net.runelite.api.coords.WorldPoint;
 import net.runelite.api.events.BoostedLevelChanged;
@@ -67,7 +70,7 @@ import net.runelite.api.events.ExperienceChanged;
 import net.runelite.api.events.GameStateChanged;
 import net.runelite.api.events.GrandExchangeOfferChanged;
 import net.runelite.api.events.MapRegionChanged;
-import net.runelite.api.events.NpcDespawned;
+import net.runelite.api.events.MenuEntryAdded;
 import net.runelite.api.events.NpcSpawned;
 import net.runelite.api.events.PlayerDespawned;
 import net.runelite.api.events.PlayerMenuOptionsChanged;
@@ -91,11 +94,14 @@ import static net.runelite.client.callback.Hooks.eventBus;
 import net.runelite.rs.api.RSClanMemberManager;
 import net.runelite.rs.api.RSClient;
 import net.runelite.rs.api.RSDeque;
+import net.runelite.rs.api.RSFriendContainer;
+import net.runelite.rs.api.RSFriendManager;
 import net.runelite.rs.api.RSHashTable;
 import net.runelite.rs.api.RSIndexedSprite;
 import net.runelite.rs.api.RSItemContainer;
 import net.runelite.rs.api.RSNPC;
 import net.runelite.rs.api.RSName;
+import net.runelite.rs.api.RSNameable;
 import net.runelite.rs.api.RSPlayer;
 import net.runelite.rs.api.RSWidget;
 
@@ -121,7 +127,13 @@ public abstract class RSClientMixin implements RSClient
 	private static RSPlayer[] oldPlayers = new RSPlayer[2048];
 
 	@Inject
-	private static RSNPC[] oldNpcs = new RSNPC[32768];
+	private static int itemPressedDurationBuffer;
+
+	@Inject
+	private static int inventoryDragDelay;
+
+	@Inject
+	private static int oldMenuEntryCount;
 
 	@Inject
 	@Override
@@ -163,6 +175,13 @@ public abstract class RSClientMixin implements RSClient
 	public void setInterpolateObjectAnimations(boolean interpolate)
 	{
 		interpolateObjectAnimations = interpolate;
+	}
+
+	@Inject
+	@Override
+	public void setInventoryDragDelay(int delay)
+	{
+		inventoryDragDelay = delay;
 	}
 
 	@Inject
@@ -466,6 +485,31 @@ public abstract class RSClientMixin implements RSClient
 		}
 
 		setMenuOptionCount(count);
+		oldMenuEntryCount = count;
+	}
+
+	@FieldHook("menuOptionCount")
+	@Inject
+	public static void onMenuOptionsChanged(int idx)
+	{
+		int oldCount = oldMenuEntryCount;
+		int newCount = client.getMenuOptionCount();
+
+		oldMenuEntryCount = newCount;
+
+		if (newCount == oldCount + 1)
+		{
+			MenuEntryAdded event = new MenuEntryAdded(
+				client.getMenuOptions()[newCount - 1],
+				client.getMenuTargets()[newCount - 1],
+				client.getMenuTypes()[newCount - 1],
+				client.getMenuIdentifiers()[newCount - 1],
+				client.getMenuActionParams0()[newCount - 1],
+				client.getMenuActionParams1()[newCount - 1]
+			);
+
+			eventBus.post(event);
+		}
 	}
 
 	@Inject
@@ -523,27 +567,6 @@ public abstract class RSClientMixin implements RSClient
 
 	@Inject
 	@Override
-	public boolean getBoundingBoxAlwaysOnMode()
-	{
-		return getboundingBox3DDrawMode() == getALWAYSDrawMode();
-	}
-
-	@Inject
-	@Override
-	public void setBoundingBoxAlwaysOnMode(boolean alwaysDrawBoxes)
-	{
-		if (alwaysDrawBoxes)
-		{
-			setboundingBox3DDrawMode(getALWAYSDrawMode());
-		}
-		else
-		{
-			setboundingBox3DDrawMode(getON_MOUSEOVERDrawMode());
-		}
-	}
-
-	@Inject
-	@Override
 	public void changeMemoryMode(boolean lowMemory)
 	{
 		setLowMemory(lowMemory);
@@ -582,6 +605,26 @@ public abstract class RSClientMixin implements RSClient
 	{
 		final RSClanMemberManager clanMemberManager = getClanMemberManager();
 		return clanMemberManager != null ? (ClanMember[]) getClanMemberManager().getNameables() : null;
+	}
+
+	@Inject
+	@Override
+	public Friend[] getFriends()
+	{
+		final RSFriendManager friendManager = getFriendManager();
+		if (friendManager == null)
+		{
+			return null;
+		}
+
+		final RSFriendContainer friendContainer = friendManager.getFriendContainer();
+		if (friendContainer == null)
+		{
+			return null;
+		}
+
+		RSNameable[] nameables = friendContainer.getNameables();
+		return (Friend[]) nameables;
 	}
 
 	@Inject
@@ -651,6 +694,28 @@ public abstract class RSClientMixin implements RSClient
 			WidgetLoaded event = new WidgetLoaded();
 			event.setGroupId(groupId);
 			eventBus.post(event);
+		}
+	}
+
+	@FieldHook("itemPressedDuration")
+	@Inject
+	public static void itemPressedDurationChanged(int idx)
+	{
+		if (client.getItemPressedDuration() > 0)
+		{
+			itemPressedDurationBuffer++;
+			if (itemPressedDurationBuffer >= inventoryDragDelay)
+			{
+				client.setItemPressedDuration(itemPressedDurationBuffer);
+			}
+			else
+			{
+				client.setItemPressedDuration(0);
+			}
+		}
+		else
+		{
+			itemPressedDurationBuffer = 0;
 		}
 	}
 
@@ -736,17 +801,7 @@ public abstract class RSClientMixin implements RSClient
 		if (npc != null)
 		{
 			npc.setIndex(idx);
-		}
 
-		RSNPC oldNpc = oldNpcs[idx];
-		oldNpcs[idx] = npc;
-
-		if (oldNpc != null)
-		{
-			eventBus.post(new NpcDespawned(oldNpc));
-		}
-		if (npc != null)
-		{
 			deferredEventBus.post(new NpcSpawned(npc));
 		}
 	}
@@ -826,7 +881,30 @@ public abstract class RSClientMixin implements RSClient
 	@Override
 	public boolean hasHintArrow()
 	{
-		return client.getHintArrowTargetType() == HintArrowType.NONE.getValue();
+		return client.getHintArrowTargetType() != HintArrowType.NONE.getValue();
+	}
+
+	@Inject
+	@Override
+	public HintArrowType getHintArrowType()
+	{
+		int type = client.getHintArrowTargetType();
+		if (type == HintArrowType.NPC.getValue())
+		{
+			return HintArrowType.NPC;
+		}
+		else if (type == HintArrowType.PLAYER.getValue())
+		{
+			return HintArrowType.PLAYER;
+		}
+		else if (type == HintArrowType.WORLD_POSITION.getValue())
+		{
+			return HintArrowType.WORLD_POSITION;
+		}
+		else
+		{
+			return HintArrowType.NONE;
+		}
 	}
 
 	@Inject
@@ -864,6 +942,60 @@ public abstract class RSClientMixin implements RSClient
 		client.setHintArrowOffsetY(LOCAL_TILE_SIZE / 2);
 	}
 
+	@Inject
+	@Override
+	public WorldPoint getHintArrowPoint()
+	{
+		if (getHintArrowType() == HintArrowType.WORLD_POSITION)
+		{
+			int x = client.getHintArrowX();
+			int y = client.getHintArrowY();
+			return new WorldPoint(x, y, client.getPlane());
+		}
+
+		return null;
+	}
+
+	@Inject
+	@Override
+	public Player getHintArrowPlayer()
+	{
+		if (getHintArrowType() == HintArrowType.PLAYER)
+		{
+			int idx = client.getHintArrowPlayerTargetIdx();
+			RSPlayer[] players = client.getCachedPlayers();
+
+			if (idx < 0 || idx >= players.length)
+			{
+				return null;
+			}
+
+			return players[idx];
+		}
+
+		return null;
+	}
+
+	@Inject
+	@Override
+	public NPC getHintArrowNpc()
+	{
+		if (getHintArrowType() == HintArrowType.NPC)
+		{
+			int idx = client.getHintArrowNpcTargetIdx();
+			RSNPC[] npcs = client.getCachedNPCs();
+
+			if (idx < 0 || idx >= npcs.length)
+			{
+				return null;
+			}
+
+			return npcs[idx];
+		}
+
+		return null;
+	}
+
 	@Copy("menuAction")
 	static void rs$menuAction(int var0, int var1, int var2, int var3, String var4, String var5, int var6, int var7)
 	{
@@ -899,5 +1031,13 @@ public abstract class RSClientMixin implements RSClient
 	public void setTickCount(int tick)
 	{
 		tickCount = tick;
+	}
+
+	@Inject
+	@Override
+	public EnumSet<WorldType> getWorldType()
+	{
+		int flags = getFlags();
+		return WorldType.fromMask(flags);
 	}
 }
